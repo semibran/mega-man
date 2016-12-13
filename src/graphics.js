@@ -1,15 +1,24 @@
 var displays  = []
 var listening = false
+var resized   = false
 
 function listen() {
   listening = true
   window.addEventListener("resize", onWindowResize)
 }
 
-function onWindowResize() {
+function resize() {
   displays.forEach(function (display) {
     display.resize()
   })
+  resized = false
+}
+
+function onWindowResize() {
+  if (!resized) {
+    requestAnimationFrame(resize)
+  }
+  resized = true
 }
 
 function Scene() {
@@ -38,7 +47,6 @@ function Display(aspectRatio) {
 
   this.aspectRatio = aspectRatio = aspectRatio || 4 / 3
   this.center = [_scale / 2, _scale * (1 / aspectRatio / 2)]
-  this.scene = null
   displays.push(this)
 
   // Privileged methods
@@ -54,10 +62,16 @@ function Display(aspectRatio) {
         height = parentRectHeight
         width  = height * aspectRatio
       }
-      _canvas.width  = width
-      _canvas.height = height
-      _unit = width / _scale
-      this.redraw()
+      width = Math.round(width)
+      height = Math.round(height)
+      if (width !== _canvas.width || height !== _canvas.height) {
+        _canvas.width  = width
+        _canvas.height = height
+        _unit = width / _scale
+        this.clear()
+        this.render(_scene)
+      }
+      return this
     },
     clear: function (region) {
       if (region) {
@@ -74,36 +88,40 @@ function Display(aspectRatio) {
       _context.fillStyle = _fill
       _context.fillRect(x, y, w, h)
     },
-    draw: function (scene, camera) {
-      if (!scene) return null
-      _scene = scene
-      scene.sprites.forEach(this.drawSprite, this)
-    },
-    redraw: function (scene) {
-      this.clear()
-
+    render: function (scene, force) {
       scene = scene || _scene
       if (!scene) return null // throw "GraphicsError: Cannot `redraw` `Display` with an undefined `scene`."
-
-      this.draw(scene)
+      scene.sprites.forEach(this.redrawSprite, this)
+      _scene = scene
     },
     clearSprite: function (sprite) {
-      var region = sprite.getRegion()
+      var oldRegion = sprite.region
+      var newRegion = sprite.getRegion(_unit)
+      if (!oldRegion) return true // throw "GraphicsError: Cannot clear `Sprite` of `region` null"
+      for (var i = oldRegion.length; i--;) {
+        if (oldRegion[i] !== newRegion[i]) {
+          break
+        }
+        if (i === 0) return false
+      }
       this.clear(region)
       return region
     },
     drawSprite: function (sprite) {
-      region = sprite.getRegion()
+      region = sprite.getRegion(_unit)
       if (!region) throw "GraphicsError: Cannot draw `Sprite` of `region` null"
-      var x = region[0] * _unit
-      var y = region[1] * _unit
-      var w = region[2] * _unit
-      var h = region[3] * _unit
+      var x = region[0]
+      var y = region[1]
+      var w = region[2]
+      var h = region[3]
       _context.drawImage(sprite.element, x, y, w, h)
+      sprite.region = region
     },
     redrawSprite: function (sprite) {
-      this.clearSprite(sprite)
-      this.drawSprite (sprite)
+      var region = this.clearSprite(sprite)
+      if (region) {
+        this.drawSprite (sprite)
+      }
     },
     mount: function (parentSelector) {
       var parent = document.querySelector(parentSelector)
@@ -157,39 +175,77 @@ function Sprite(type) {
       _canvas.width  = _width  = width
       _canvas.height = _height = height
       this.render()
-      if (this.position)
-        this.region = this.getRegion()
+      this.region = this.getRegion()
     }
   })
 
   Object.assign(this, type || {})
+  this.region = null
   this.position  = null
-  this.transform = new Transform()
+
+  var transform = this.transform = new Transform()
+
+  Object.assign(this, transform.getMethods(transform.translation, transform.rotation, transform.scaling))
 
   this.resize(this.size[0] || 0, this.size[1] || 0)
 }
 
 Sprite.prototype = {
-  getRegion: function () {
+  getRegion: function (scaling) {
     var position = this.position
     var size = this.size
 
-    if (!position) throw "GraphicsError: Cannot get `Sprite.region` with `position` null"
+    if (!position) return null // throw "GraphicsError: Cannot get `Sprite.region` with `position` null"
 
     var w = size[0]
     var h = size[1]
     var x = position[0] - w / 2
     var y = position[1] - h / 2
-    var region = [x, y, w, h]
+    var region = [x * scaling, y * scaling, w * scaling, h * scaling]
     return region
   }
 }
 
-function Transform() {
-  this.translation = [0, 0]
-  this.rotation = 0
-  this.scale = [0, 0]
+function Transform(translation, rotation, scaling) {
+  this.translation = translation = translation || [0, 0]
+  this.rotation    = rotation    = rotation    || 0
+  this.scaling     = scaling     = scaling       || [0, 0]
+  Object.assign(this, this.getMethods(translation, rotation, scaling))
 }
+
+Transform.prototype = {
+  getMethods: function (translation, rotation, scaling) {
+    return {
+      translate: function (x, y) {
+        translation[0] = x
+        translation[1] = y
+      },
+      translateX: function (x) {
+        translation[0] = x
+      },
+      translateY: function (y) {
+        translation[1] = y
+      },
+      rotate: function (r) {
+        while (r < 0) r += 360
+        while (r > 360) r -= 360
+        rotation = r
+      },
+      scale: function (x, y) {
+        scaling[0] = x
+        scaling[1] = y
+      },
+      scaleX: function (x) {
+        scaling[0] = x
+      },
+      scaleY: function (y) {
+        scaling[1] = y
+      }
+    }
+  }
+}
+
+Object.assign(Sprite.prototype, Transform.prototype)
 
 export default {
   Display: Display,
