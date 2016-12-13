@@ -1,0 +1,26 @@
+{
+  "name": "mega-man",
+  "version": "0.0.0",
+  "description": "Browser-based Mega Man engine.",
+  "author": "Brandon Semilla (https://github.com/semibran)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/semibran/mega-man.git"
+  },
+  "scripts": {
+    "start": "npm-run-all --parallel serve proxy watch",
+    "serve": "node server.js",
+    "proxy": "browser-sync start --proxy localhost:3000 --serveStatic \"docs\" --files \"docs\" --no-ui",
+    "watch": "rollup -w -i src/script.js -o docs/script.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.14.0"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.18.2",
+    "npm-run-all": "^3.1.2",
+    "rollup": "^0.36.4",
+    "rollup-watch": "^2.5.0"
+  }
+}
