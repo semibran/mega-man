@@ -27,7 +27,7 @@ function Scene() {
 
 Scene.prototype = {
   add: function (sprite) {
-    this.sprites.push(sprite);
+    for (var i = arguments.length; i--; this.sprites.push(arguments[i]));
   },
   remove: function (sprite) {
     var index, sprites = this.sprites
@@ -245,12 +245,31 @@ Transform.prototype = {
   }
 };
 
-Object.assign(Sprite.prototype, Transform.prototype);
+function Font(image, config) {
+  this.image = image;
+}
+
+function Text(text, font) {
+  Sprite.call(this);
+  this.text = text;
+  this.font = font;
+}
+
+Text.prototype = Object.assign({}, Sprite.prototype);
 
 var Graphics = {
+  load: function (imagePath) {
+    var image = new window.Image();
+    image.src = imagePath;
+    image.onload = function () {
+      console.log(image);
+    };
+  },
   Display: Display,
   Scene: Scene,
-  Sprite: Sprite
+  Sprite: Sprite,
+  Font: Font,
+  Text: Text
 };
 
 var Vector = {
@@ -482,13 +501,28 @@ var Square = {
 var display = new Graphics.Display;
 display.mount("#app");
 
+var scene = new Graphics.Scene;
+
 var sprite = new Graphics.Sprite(Square.proto.type.sprite);
 sprite.position = Vector.clone(display.center);
 
-sprite.transform.rotate(45);
+sprite.rotate(45);
 
-var scene = new Graphics.Scene;
 scene.add(sprite);
+
+function createGreeting(image) {
+  var font = new Graphics.Font(image, {
+    chars: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!*<>-'\"()",
+    width: 10,
+    height: 5,
+    styles: 2
+  });
+  var greeting = new Graphics.Text("Hello World!", font);
+  greeting.position = Vector.clone(display.center);
+  scene.add(greeting);
+}
+
+Graphics.load("images/text.png", createGreeting);
 
 var Game = (function () {
   var paused = false;

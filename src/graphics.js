@@ -27,7 +27,7 @@ function Scene() {
 
 Scene.prototype = {
   add: function (sprite) {
-    this.sprites.push(sprite)
+    for (var i = arguments.length; i--; this.sprites.push(arguments[i]));
   },
   remove: function (sprite) {
     var index, sprites = this.sprites
@@ -245,10 +245,33 @@ Transform.prototype = {
   }
 }
 
-Object.assign(Sprite.prototype, Transform.prototype)
+function Image() {
+
+}
+
+function Font(image, config) {
+  this.image = image
+}
+
+function Text(text, font) {
+  Sprite.call(this)
+  this.text = text
+  this.font = font
+}
+
+Text.prototype = Object.assign({}, Sprite.prototype)
 
 export default {
+  load: function (imagePath) {
+    var image = new window.Image()
+    image.src = imagePath
+    image.onload = function () {
+      console.log(image)
+    }
+  },
   Display: Display,
   Scene: Scene,
-  Sprite: Sprite
+  Sprite: Sprite,
+  Font: Font,
+  Text: Text
 }
