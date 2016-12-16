@@ -93,4 +93,4 @@ var methods = {
   }
 }
 
-export default Object.assign({}, constants, methods)
+module.exports = Object.assign({}, constants, methods)

@@ -11,7 +11,7 @@
     "start": "npm-run-all --parallel serve proxy watch",
     "serve": "node server.js",
     "proxy": "browser-sync start --proxy localhost:3000 --serveStatic \"docs\" --files \"docs\" --no-ui",
-    "watch": "rollup -w -i src/script.js -o docs/script.js"
+    "watch": "watchify src/script.js -o docs/script.js"
   },
   "license": "MIT",
   "dependencies": {
@@ -20,7 +20,6 @@
   "devDependencies": {
     "browser-sync": "^2.18.2",
     "npm-run-all": "^3.1.2",
-    "rollup": "^0.36.4",
-    "rollup-watch": "^2.5.0"
+    "watchify": "^3.8.0"
   }
 }

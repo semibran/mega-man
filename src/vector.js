@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   LEFT:       [-1, 0],
   RIGHT:      [ 1, 0],
   UP:         [ 0,-1],
